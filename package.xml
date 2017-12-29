@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>bosch_imu_driver</name>
   <version>1.0.0</version>
   <author>Michal Drwiega</author>
@@ -14,12 +14,9 @@
   <!-- Dependencies which this package needs to build itself. -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <!-- Dependencies needed to compile this package. -->
-  <build_depend>rospy</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-
-    <!-- Dependencies needed after this package is compiled. -->
-  <run_depend>rospy</run_depend>
-  <run_depend>sensor_msgs</run_depend>
+  <!-- Dependencies -->
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>python-serial</depend>
 </package>
 
