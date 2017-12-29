@@ -191,7 +191,7 @@ if __name__ == '__main__':
     # Check if IMU ID is correct
     buf = read_from_dev(ser, CHIP_ID, 1)
     if buf == 0 or buf[0] != BNO055_ID:
-        #rospy.logerr("Device ID is incorrect. Shutdown.")
+        rospy.logerr("Device ID is incorrect. Shutdown.")
         sys.exit(0)
 
     # IMU Configuration
