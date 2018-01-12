@@ -166,19 +166,24 @@ mag_msg = MagneticField()       # Magnetometer data
 if __name__ == '__main__':
     rospy.init_node("bosch_imu_node")
 
-    # Sensor measurements publishers
-    pub_data = rospy.Publisher('imu/data', Imu, queue_size=1)
-    pub_raw = rospy.Publisher('imu/raw', Imu, queue_size=1)
-    pub_mag = rospy.Publisher('imu/mag', MagneticField, queue_size=1)
-    pub_temp = rospy.Publisher('imu/temp', Temperature, queue_size=1)
-
-    # srv = Server(imuConfig, reconfig_callback)  # define dynamic_reconfigure callback
 
     # Get parameters values
     port = rospy.get_param('~port', '/dev/ttyUSB0')
     frame_id = rospy.get_param('~frame_id', 'imu_link')
-    frequency = rospy.get_param('frequency', 100)
-    operation_mode = rospy.get_param('operation_mode', OPER_MODE_NDOF)
+    frequency = rospy.get_param('~frequency', 100)
+    operation_mode = rospy.get_param('~operation_mode', OPER_MODE_NDOF)
+    publish_mag = rospy.get_param('~publish_mag', False)
+    publish_raw = rospy.get_param('~publish_raw', False)
+
+    # Sensor measurements publishers
+    pub_data = rospy.Publisher('imu/data', Imu, queue_size=1)
+    if publish_raw:
+        pub_raw = rospy.Publisher('imu/raw', Imu, queue_size=1)
+    if publish_mag:
+        pub_mag = rospy.Publisher('imu/mag', MagneticField, queue_size=1)
+    pub_temp = rospy.Publisher('imu/temp', Temperature, queue_size=1)
+
+    # srv = Server(imuConfig, reconfig_callback)  # define dynamic_reconfigure callback
 
     # Open serial port
     rospy.loginfo("Opening serial port: %s...", port)
@@ -252,21 +257,22 @@ if __name__ == '__main__':
             0 , 0.017, 0,
             0 , 0 , 0.017
             ]
-            
-            # Publish raw data
-            imu_raw.header.stamp = rospy.Time.now()
-            imu_raw.header.frame_id = frame_id
-            imu_raw.header.seq = seq
-            imu_raw.orientation_covariance[0] = -1  #no orientation available in the RAW data, so set to -1 according to ROS convention
-            imu_raw.linear_acceleration.x = float(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0]) / acc_fact
-            imu_raw.linear_acceleration.y = float(st.unpack('h', st.pack('BB', buf[2], buf[3]))[0]) / acc_fact
-            imu_raw.linear_acceleration.z = float(st.unpack('h', st.pack('BB', buf[4], buf[5]))[0]) / acc_fact
-            imu_raw.linear_acceleration_covariance = linear_acceleration_covariance
-            imu_raw.angular_velocity.x = float(st.unpack('h', st.pack('BB', buf[12], buf[13]))[0]) / gyr_fact
-            imu_raw.angular_velocity.y = float(st.unpack('h', st.pack('BB', buf[14], buf[15]))[0]) / gyr_fact
-            imu_raw.angular_velocity.z = float(st.unpack('h', st.pack('BB', buf[16], buf[17]))[0]) / gyr_fact
-            imu_raw.angular_velocity_covariance = angular_velocity_covariance
-            pub_raw.publish(imu_raw)
+
+            if publish_raw:
+                # Publish raw data
+                imu_raw.header.stamp = rospy.Time.now()
+                imu_raw.header.frame_id = frame_id
+                imu_raw.header.seq = seq
+                imu_raw.orientation_covariance[0] = -1  #no orientation available in the RAW data, so set to -1 according to ROS convention
+                imu_raw.linear_acceleration.x = float(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0]) / acc_fact
+                imu_raw.linear_acceleration.y = float(st.unpack('h', st.pack('BB', buf[2], buf[3]))[0]) / acc_fact
+                imu_raw.linear_acceleration.z = float(st.unpack('h', st.pack('BB', buf[4], buf[5]))[0]) / acc_fact
+                imu_raw.linear_acceleration_covariance = linear_acceleration_covariance
+                imu_raw.angular_velocity.x = float(st.unpack('h', st.pack('BB', buf[12], buf[13]))[0]) / gyr_fact
+                imu_raw.angular_velocity.y = float(st.unpack('h', st.pack('BB', buf[14], buf[15]))[0]) / gyr_fact
+                imu_raw.angular_velocity.z = float(st.unpack('h', st.pack('BB', buf[16], buf[17]))[0]) / gyr_fact
+                imu_raw.angular_velocity_covariance = angular_velocity_covariance
+                pub_raw.publish(imu_raw)
 
             #            print("read: ", binascii.hexlify(buf), "acc = (",imu_data.linear_acceleration.x,
             #                  imu_data.linear_acceleration.y, imu_data.linear_acceleration.z, ")")
@@ -290,14 +296,15 @@ if __name__ == '__main__':
             imu_data.angular_velocity_covariance = angular_velocity_covariance
             pub_data.publish(imu_data)
 
-            # Publish magnetometer data
-            mag_msg.header.stamp = rospy.Time.now()
-            mag_msg.header.frame_id = frame_id
-            mag_msg.header.seq = seq
-            mag_msg.magnetic_field.x = float(st.unpack('h', st.pack('BB', buf[6], buf[7]))[0]) / mag_fact
-            mag_msg.magnetic_field.y = float(st.unpack('h', st.pack('BB', buf[8], buf[9]))[0]) / mag_fact
-            mag_msg.magnetic_field.z = float(st.unpack('h', st.pack('BB', buf[10], buf[11]))[0]) / mag_fact
-            pub_mag.publish(mag_msg)
+            if publish_mag:
+                # Publish magnetometer data
+                mag_msg.header.stamp = rospy.Time.now()
+                mag_msg.header.frame_id = frame_id
+                mag_msg.header.seq = seq
+                mag_msg.magnetic_field.x = float(st.unpack('h', st.pack('BB', buf[6], buf[7]))[0]) / mag_fact
+                mag_msg.magnetic_field.y = float(st.unpack('h', st.pack('BB', buf[8], buf[9]))[0]) / mag_fact
+                mag_msg.magnetic_field.z = float(st.unpack('h', st.pack('BB', buf[10], buf[11]))[0]) / mag_fact
+                pub_mag.publish(mag_msg)
 
             # Publish temperature
             temperature_msg.header.stamp = rospy.Time.now()
