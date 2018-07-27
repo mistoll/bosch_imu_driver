@@ -18,5 +18,6 @@
   <depend>rospy</depend>
   <depend>sensor_msgs</depend>
   <depend>python-serial</depend>
+  <build_depend>roslint</build_depend>
 </package>
 
