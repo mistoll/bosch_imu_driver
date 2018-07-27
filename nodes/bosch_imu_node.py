@@ -238,24 +238,24 @@ if __name__ == '__main__':
         buf = read_from_dev(ser, ACCEL_DATA, 45)
         if buf != 0:
             
-            #BNO055 covariance matrices derived from datasheet. stdev^2 = variance
-            #see: https://imgur.com/gefq5wd
-            orientation_covariance = [
-            0.0159 , 0 , 0,
-            0, 0.0159, 0,
-            0, 0, 0.0159
+            # BNO055 covariance matrices derived from datasheet. stdev^2 = variance
+            # see: https://imgur.com/gefq5wd [1]
+            orientation_covariance = [  # https://forums.adafruit.com/viewtopic.php?f=19&t=104984  0.5-3.0 degree measured in fusion mode and datasheet mag accuracy <2.5 degree for non fusion mode
+            0.0019 , 0 , 0,  # was 0.0159   <2.5 degrees max sigma error equals to (0,0436332)^2=0.00190385614 variance
+            0, 0.0019, 0,
+            0, 0, 0.0019
             ]
             
             angular_velocity_covariance = [
-            0.04, 0 , 0,
-            0 , 0.04, 0,
-            0 , 0 , 0.04
+            0.0012, 0 , 0,  # was 0.04 - switched values with acceleration in [1]
+            0 , 0.0012, 0,  # 0.3-2 degree from datasheet and [1] in non fusion mode, for 2 degree  (0,0349066)^2 = 0.00121847072
+            0 , 0 , 0.0012
             ]
             
             linear_acceleration_covariance = [
-            0.017 , 0 , 0,
-            0 , 0.017, 0,
-            0 , 0 , 0.017
+            0.0385 , 0 , 0,  # was 0.017 - switched values with angular velocity in [1]
+            0 , 0.0385, 0,  # 1-4% of 1g=9.81m/s^2 datasheet in non fusion mode, for 2% also as in [1]  (0.1962)^2 = 0.03849444
+            0 , 0 , 0.0385
             ]
 
             if publish_raw:
