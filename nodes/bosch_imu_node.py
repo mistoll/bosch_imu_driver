@@ -41,6 +41,7 @@ import struct as st
 import binascii
 
 from time import time
+from std_msgs.msg import UInt8, Int32, Int32MultiArray
 from sensor_msgs.msg import Imu, Temperature, MagneticField
 
 from tf.transformations import quaternion_from_euler
@@ -157,10 +158,16 @@ def write_to_dev(ser, reg_addr, length, data):
     return True
 
 
-imu_data = Imu()            # Filtered data
-imu_raw = Imu()             # Raw IMU data
-temperature_msg = Temperature() # Temperature
-mag_msg = MagneticField()       # Magnetometer data
+imu_data = Imu()  # Filtered data
+imu_raw = Imu()  # Raw IMU data
+temperature_msg = Temperature()  # Temperature
+mag_msg = MagneticField()  # Magnetometer data
+imu_calib_stat = UInt8()
+acc_offset = Int32MultiArray()
+mag_offset = Int32MultiArray()
+gyr_offset = Int32MultiArray()
+acc_radius = Int32()
+mag_radius = Int32()
 
 # Main function
 if __name__ == '__main__':
@@ -174,15 +181,26 @@ if __name__ == '__main__':
     operation_mode = rospy.get_param('~operation_mode', OPER_MODE_NDOF)
     publish_mag = rospy.get_param('~publish_mag', False)
     publish_raw = rospy.get_param('~publish_raw', False)
+    publish_cal = rospy.get_param('~publish_cal', False)
+    publish_off_rad = rospy.get_param('~publish_off_rad', False)
 
     # Sensor measurements publishers
     pub_data = rospy.Publisher('imu/data', Imu, queue_size=1)
+    pub_temp = rospy.Publisher('imu/temp', Temperature, queue_size=1)
     if publish_raw:
         pub_raw = rospy.Publisher('imu/raw', Imu, queue_size=1)
     if publish_mag:
         pub_mag = rospy.Publisher('imu/mag', MagneticField, queue_size=1)
-    pub_temp = rospy.Publisher('imu/temp', Temperature, queue_size=1)
+    if publish_cal:
+        pub_calib = rospy.Publisher('imu/calib_stat', UInt8, queue_size=1)
 
+    if publish_off_rad:
+        pub_acc_offset = rospy.Publisher('imu/acc_offset', Int32MultiArray, queue_size=1)
+        pub_mag_offset = rospy.Publisher('imu/mag_offset', Int32MultiArray, queue_size=1)
+        pub_gyr_offset = rospy.Publisher('imu/gyr_offset', Int32MultiArray, queue_size=1)
+        pub_acc_radius = rospy.Publisher('imu/acc_radius', Int32, queue_size=1)
+        pub_mag_radius = rospy.Publisher('imu/mag_radius', Int32, queue_size=1)
+    
     # srv = Server(imuConfig, reconfig_callback)  # define dynamic_reconfigure callback
 
     # Open serial port
@@ -236,6 +254,48 @@ if __name__ == '__main__':
     seq = 0
 
     while not rospy.is_shutdown():
+
+        if publish_off_rad:   
+            buf = read_from_dev(ser, ACC_OFFSET, 6)
+            if buf != 0:
+                acc_offset.data = []
+                acc_offset.data.append(int(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0]))
+                acc_offset.data.append(int(st.unpack('h', st.pack('BB', buf[2], buf[3]))[0]))
+                acc_offset.data.append(int(st.unpack('h', st.pack('BB', buf[4], buf[5]))[0]))
+                pub_acc_offset.publish(acc_offset)
+
+            buf = read_from_dev(ser, MAG_OFFSET, 6)
+            if buf != 0:
+                mag_offset.data = []
+                mag_offset.data.append(int(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0]))
+                mag_offset.data.append(int(st.unpack('h', st.pack('BB', buf[2], buf[3]))[0]))
+                mag_offset.data.append(int(st.unpack('h', st.pack('BB', buf[4], buf[5]))[0]))
+                pub_mag_offset.publish(mag_offset)
+
+            buf = read_from_dev(ser, GYR_OFFSET, 6)
+            if buf != 0:
+                gyr_offset.data = []
+                gyr_offset.data.append(int(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0]))
+                gyr_offset.data.append(int(st.unpack('h', st.pack('BB', buf[2], buf[3]))[0]))
+                gyr_offset.data.append(int(st.unpack('h', st.pack('BB', buf[4], buf[5]))[0]))
+                pub_gyr_offset.publish(gyr_offset)
+
+            buf = read_from_dev(ser, ACC_RADIUS, 2)
+            if buf != 0:
+                acc_radius = int(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0])
+                pub_acc_radius.publish(acc_radius)
+
+            buf = read_from_dev(ser, MAG_RADIUS, 2)
+            if buf != 0:
+                mag_radius = int(st.unpack('h', st.pack('BB', buf[0], buf[1]))[0])
+                pub_mag_radius.publish(mag_radius)
+
+        if publish_cal:
+            buf = read_from_dev(ser, CALIB_STAT, 1)
+            if buf != 0:
+                imu_calib_stat = buf[0]
+                pub_calib.publish(imu_calib_stat)
+
         buf = read_from_dev(ser, ACCEL_DATA, 45)
         if buf != 0:
             
