@@ -232,6 +232,7 @@ if __name__ == '__main__':
     acc_fact = 100.0
     mag_fact = 16.0
     gyr_fact = 900.0
+    qua_fac = 16384.0 # 2^14
     seq = 0
 
     while not rospy.is_shutdown():
@@ -281,10 +282,10 @@ if __name__ == '__main__':
             imu_data.header.stamp = rospy.Time.now()
             imu_data.header.frame_id = frame_id
             imu_data.header.seq = seq
-            imu_data.orientation.w = float(st.unpack('h', st.pack('BB', buf[24], buf[25]))[0])
-            imu_data.orientation.x = float(st.unpack('h', st.pack('BB', buf[26], buf[27]))[0])
-            imu_data.orientation.y = float(st.unpack('h', st.pack('BB', buf[28], buf[29]))[0])
-            imu_data.orientation.z = float(st.unpack('h', st.pack('BB', buf[30], buf[31]))[0])
+            imu_data.orientation.w = float(st.unpack('h', st.pack('BB', buf[24], buf[25]))[0]) / qua_fac
+            imu_data.orientation.x = float(st.unpack('h', st.pack('BB', buf[26], buf[27]))[0]) / qua_fac
+            imu_data.orientation.y = float(st.unpack('h', st.pack('BB', buf[28], buf[29]))[0]) / qua_fac
+            imu_data.orientation.z = float(st.unpack('h', st.pack('BB', buf[30], buf[31]))[0]) / qua_fac
             imu_data.orientation_covariance = orientation_covariance
             imu_data.linear_acceleration.x = float(st.unpack('h', st.pack('BB', buf[32], buf[33]))[0]) / acc_fact
             imu_data.linear_acceleration.y = float(st.unpack('h', st.pack('BB', buf[34], buf[35]))[0]) / acc_fact
